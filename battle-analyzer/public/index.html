@@ -716,9 +716,24 @@
       if (Array.isArray(data.players) && data.players.length >= 2) {
         return data.players;
       }
-      // Some older API formats
+      // Some older API formats (camelCase)
       if (data.player1 && data.player2) {
         return [data.player1, data.player2];
+      }
+      // Current API format: player_1/player_2 strings + details JSON string
+      if (data.player_1 && data.player_2) {
+        let details = {};
+        try {
+          details = typeof data.details === 'string' ? JSON.parse(data.details) : (data.details || {});
+        } catch (e) {
+          details = {};
+        }
+        const team1 = details.team1 || {};
+        const team2 = details.team2 || {};
+        return [
+          { player: data.player_1, team: team1 },
+          { player: data.player_2, team: team2 },
+        ];
       }
       throw new Error('Could not find player data in battle response. The battle may not exist or the API format has changed.');
     }
