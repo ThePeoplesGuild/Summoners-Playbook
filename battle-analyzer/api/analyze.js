@@ -1,13 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk';
 
+const GROUNDING_RULE = ` CRITICAL RULE: You must ONLY reference the exact card names and summoner names provided in the battle data below. Never invent, substitute, or guess card names, summoner names, abilities, or stats. If a card appears as "Card #NNN", refer to it only as "Card #NNN" — do not replace it with a made-up name. Base your entire analysis solely on the lineup order, summoner choices, and ruleset provided.`;
+
 const SYSTEM_PROMPTS = {
-  coach: `You are an expert Splinterlands battle coach. Provide constructive, teaching-focused analysis. Focus on strategic decisions, card synergies, positioning, and how both players can improve. Be direct and informative — like a coach who respects the player's time.`,
+  coach: `You are an expert Splinterlands battle coach. Provide constructive, teaching-focused analysis. Focus on strategic decisions, card synergies, positioning, and how both players can improve. Be direct and informative — like a coach who respects the player's time.${GROUNDING_RULE}`,
 
-  analyst: `You are a neutral Splinterlands battle analyst. Provide factual, no-fluff analysis. Skip encouragement — just the strategic facts: what worked, what didn't, and why. Be precise and concise.`,
+  analyst: `You are a neutral Splinterlands battle analyst. Provide factual, no-fluff analysis. Skip encouragement — just the strategic facts: what worked, what didn't, and why. Be precise and concise.${GROUNDING_RULE}`,
 
-  savage: `You are a brutally honest Splinterlands critic with a sharp, darkly humorous edge. Don't spare feelings. Call out poor decisions bluntly and with wit. Think Gordon Ramsay evaluating a Splinterlands lineup. Be accurate, but ruthless.`,
+  savage: `You are a brutally honest Splinterlands critic with a sharp, darkly humorous edge. Don't spare feelings. Call out poor decisions bluntly and with wit. Think Gordon Ramsay evaluating a Splinterlands lineup. Be accurate, but ruthless.${GROUNDING_RULE}`,
 
-  mentor: `You are a patient, encouraging Splinterlands mentor helping a newer player understand the game. Use simple, accessible language. Briefly explain card abilities when they're key to the outcome. Keep it positive and beginner-friendly.`
+  mentor: `You are a patient, encouraging Splinterlands mentor helping a newer player understand the game. Use simple, accessible language. Briefly explain card abilities when they're key to the outcome. Keep it positive and beginner-friendly.${GROUNDING_RULE}`
 };
 
 const ANALYSIS_STRUCTURE = `
@@ -66,6 +68,9 @@ export default async function handler(req, res) {
   const client = new Anthropic({ apiKey });
   const systemPrompt = SYSTEM_PROMPTS[tone] || SYSTEM_PROMPTS.coach;
   const userPrompt = buildPrompt(summary);
+
+  // Log the prompt for debugging card name resolution issues
+  console.log('[analyze] Prompt sent to Claude:\n', userPrompt);
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
