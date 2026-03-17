@@ -73,24 +73,19 @@ export default async function handler(req, res) {
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
-  let messageStream;
-
-  req.on('close', () => {
-    if (messageStream) {
-      try { messageStream.abort(); } catch (_) {}
-    }
-  });
-
   try {
-    messageStream = client.messages.stream({
+    const stream = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1000,
       system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }]
+      messages: [{ role: 'user', content: userPrompt }],
+      stream: true,
     });
 
-    for await (const text of messageStream.textStream) {
-      res.write(`data: ${JSON.stringify({ text })}\n\n`);
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        res.write(`data: ${JSON.stringify({ text: event.delta.text })}\n\n`);
+      }
     }
 
     res.write('data: [DONE]\n\n');
